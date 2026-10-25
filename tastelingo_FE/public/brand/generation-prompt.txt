@@ -1,0 +1,18 @@
+TasteLingo — 3D brand mark
+Generated with the built-in image_gen tool. The PNG is the original generated master.
+The WebP and small PNG icons are mechanically resized web exports, retaining transparency.
+
+FINAL GENERATION PROMPT
+
+Use case: logo-brand.
+Asset type: final production 3D logo symbol for TasteLingo, a web app for learning English through personal tastes in film, books, music, and podcasts.
+Primary request: create one distinctive, sophisticated, beautifully sculpted 3D brand mark, ready to use as a website header logo and app icon, not a presentation sheet or logo mockup.
+Subject: two thick, flowing folded book-page ribbons join into one compact rounded conversation-bubble silhouette, with one short speech-bubble tail. The central opening subtly suggests a lowercase t through negative space. Integrate a small graceful warm-gold connecting arc with two restrained gold node beads into the upper-right edge, as a taste-discovery connection. The book, dialogue, and connection must read as a single coherent symbol rather than a pile of separate icons.
+Philosophy: personal taste becomes a bridge into knowledge and confident conversation. Open pages represent discovery and learning, the speech-bubble outline represents language and expression, and the connected gold nodes represent interests leading to a new learning path.
+Style/medium: premium original 3D product-brand sculpture, precise soft bevels and substantial depth, restrained satin-enamel teal material, subtle translucent mint rim highlights, brushed warm-gold accent. More architectural and elegant than toy-like. Strong simple silhouette readable at small sizes.
+Color palette: deep teal #0f766e and #115e59, luminous mint #5eead4 highlights, warm champagne gold #e8b866.
+Composition: one centered square icon, almost front-facing with a very slight three-quarter view for dimensionality, all elements fully visible, mark occupies approximately 85% of the square with balanced padding.
+Lighting: soft studio key light from upper left, realistic occlusion between the folds, controlled specular highlights, crisp edges; no cast shadow outside the symbol.
+Scene/backdrop: true transparent alpha background, no background fill, no floor, no pedestal, no card, no enclosing app tile.
+Text: none; do not render any lettering, words or brand name.
+Avoid: globes, graduation hats, flags, robot heads, brains, mascots, food imagery, clutter, extra sparkles, thin illegible details, existing brand logos, watermark. Output just ONE finished logo, square high-resolution PNG with transparency.

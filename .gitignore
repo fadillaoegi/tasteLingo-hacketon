@@ -1,0 +1,19 @@
+.env
+.env.*
+!.env.example
+.local/
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+# Qloo responses must never be committed (hackathon data rule)
+**/qloo-cache/
+**/*.qloo.json
+
+# Not needed to run the app; kept locally only
+submission/
+tmp/
+docs/PROGRESS.md
+docs/DEVPOST.md
+*.tsbuildinfo

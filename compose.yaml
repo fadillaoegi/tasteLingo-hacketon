@@ -1,0 +1,36 @@
+name: tastelingo
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tastelingo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tastelingo_local}
+      POSTGRES_DB: ${POSTGRES_DB:-tastelingo}
+    ports:
+      - '127.0.0.1:55442:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  api:
+    build: ./tastelingo_BE
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-tastelingo}:${POSTGRES_PASSWORD:-tastelingo_local}@postgres:5432/${POSTGRES_DB:-tastelingo}?sslmode=disable
+      API_ADDR: 0.0.0.0:8110
+      QLOO_MODE: ${QLOO_MODE:-mock}
+      QLOO_API_KEY: ${QLOO_API_KEY:-}
+      LLM_MODE: ${LLM_MODE:-mock}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
+      GEMINI_AUTO_DISCOVER: ${GEMINI_AUTO_DISCOVER:-true}
+      GEMINI_FALLBACK_MODELS: ${GEMINI_FALLBACK_MODELS-gemini-3.1-flash-lite,gemini-3.8-flash,gemini-3.6-flash}
+    ports:
+      - '127.0.0.1:8110:8110'
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  postgres_data:
