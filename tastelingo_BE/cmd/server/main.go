@@ -128,7 +128,16 @@ func run() error {
 	}
 
 	addr := env("API_ADDR", "127.0.0.1:8110")
-	srv := &http.Server{Addr: addr, Handler: (&httpapi.Handler{Svc: svc}).Routes(), ReadHeaderTimeout: 5 * time.Second}
+	// Hosting platforms such as Render provide the port to listen on.
+	if port := os.Getenv("PORT"); port != "" && os.Getenv("API_ADDR") == "" {
+		addr = "0.0.0.0:" + port
+	}
+	handler := &httpapi.Handler{Svc: svc, StaticDir: os.Getenv("STATIC_DIR")}
+	var e error
+	if handler.Agent, handler.Light, e = limiters(); e != nil {
+		return e
+	}
+	srv := &http.Server{Addr: addr, Handler: handler.Routes(), ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		<-ctx.Done()
 		shutdown, done := context.WithTimeout(context.Background(), 10*time.Second)
@@ -147,4 +156,36 @@ func main() {
 		slog.Error("startup failed", "error", err)
 		os.Exit(1)
 	}
+}
+
+// limiters reads hourly request limits. RATE_LIMIT=false disables them for local use.
+func limiters() (agent, light *httpapi.Limiter, err error) {
+	enabled, err := strconv.ParseBool(env("RATE_LIMIT", "false"))
+	if err != nil {
+		return nil, nil, fmt.Errorf("RATE_LIMIT must be true or false")
+	}
+	if !enabled {
+		return nil, nil, nil
+	}
+	trust, err := strconv.ParseBool(env("TRUST_PROXY", "false"))
+	if err != nil {
+		return nil, nil, fmt.Errorf("TRUST_PROXY must be true or false")
+	}
+	limit := func(key, def string) (int, error) {
+		n, err := strconv.Atoi(env(key, def))
+		if err != nil || n < 0 {
+			return 0, fmt.Errorf("%s must be a non-negative number", key)
+		}
+		return n, nil
+	}
+	var values [4]int
+	for i, kv := range [][2]string{{"AGENT_LIMIT_PER_IP", "20"}, {"AGENT_LIMIT_GLOBAL", "300"}, {"LIGHT_LIMIT_PER_IP", "200"}, {"LIGHT_LIMIT_GLOBAL", "3000"}} {
+		if values[i], err = limit(kv[0], kv[1]); err != nil {
+			return nil, nil, err
+		}
+	}
+	agent = &httpapi.Limiter{PerClient: values[0], Global: values[1], Window: time.Hour, TrustProxy: trust}
+	light = &httpapi.Limiter{PerClient: values[2], Global: values[3], Window: time.Hour, TrustProxy: trust}
+	slog.Info("rate limits enabled", "agent_per_ip_hour", values[0], "agent_global_hour", values[1], "trust_proxy", trust)
+	return agent, light, nil
 }

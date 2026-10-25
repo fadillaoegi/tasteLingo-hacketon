@@ -117,6 +117,25 @@ The browser runner checks desktop and mobile layouts, interactive stages, pause/
 motion, and a synthetic loading/cancel flow without creating a paid plan. Add
 `--learner-id <existing-id>` to inspect a saved plan as well. Screenshots stay in `.local/motion-preview/`.
 
+## Deploy
+
+The root `Dockerfile` builds one image that serves the API and the built frontend from the same
+origin (`STATIC_DIR`), listens on `$PORT`, and enables rate limiting behind a proxy.
+
+```bash
+docker build -t tastelingo .
+docker run -p 8080:8080 --env-file .env -e API_ADDR= tastelingo
+```
+
+`render.yaml` is a [Render](https://render.com) Blueprint for the same image. Use a managed
+PostgreSQL such as [Neon](https://neon.tech) for `DATABASE_URL` (with `sslmode=require`), and enter
+`QLOO_API_KEY` and `GEMINI_API_KEY` as secrets in the hosting dashboard.
+
+Rate limits (per hour): agent runs (plan, compare, adapt, exercise, answer feedback) default to 20
+per client IP and 300 in total; search and other light writes default to 200 per IP and 3000 in total.
+When a limit is reached the API returns HTTP 429 with `Retry-After`. Behind a proxy, the client IP
+is the right-most `X-Forwarded-For` entry (`TRUST_PROXY=true`).
+
 ## Data and privacy
 
 - API keys stay in the server environment, never in the browser or the repository.

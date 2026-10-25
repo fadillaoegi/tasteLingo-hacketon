@@ -14,26 +14,36 @@ import (
 
 type Handler struct {
 	Svc *application.Service
+	// Agent limits requests that run the LLM agent; Light limits Qloo search and
+	// other writes. Nil disables limiting (local development and tests).
+	Agent, Light *Limiter
+	// StaticDir, when set, serves the built frontend from the same origin.
+	StaticDir string
 }
 
 func (h *Handler) Routes() http.Handler {
 	mux := http.NewServeMux()
+	agent, light := h.Agent.Wrap, h.Light.Wrap
 	mux.HandleFunc("GET /api/health", h.health)
-	mux.HandleFunc("GET /api/search", h.search)
-	mux.HandleFunc("POST /api/learners", h.createLearner)
-	mux.HandleFunc("POST /api/learners/{id}/plan", h.buildPlan)
+	mux.HandleFunc("GET /api/search", light(h.search))
+	mux.HandleFunc("POST /api/learners", light(h.createLearner))
+	mux.HandleFunc("POST /api/learners/{id}/plan", agent(h.buildPlan))
 	mux.HandleFunc("GET /api/learners/{id}/plan", h.latestPlan)
 	mux.HandleFunc("GET /api/learners/{id}/session", h.session)
 	mux.HandleFunc("GET /api/runs/{id}", h.run)
-	mux.HandleFunc("POST /api/demo", h.demo)
-	mux.HandleFunc("POST /api/learners/{id}/compare", h.buildComparison)
+	mux.HandleFunc("POST /api/demo", light(h.demo))
+	mux.HandleFunc("POST /api/learners/{id}/compare", agent(h.buildComparison))
 	mux.HandleFunc("GET /api/learners/{id}/compare", h.latestComparison)
-	mux.HandleFunc("POST /api/learners/{id}/feedback", h.feedback)
-	mux.HandleFunc("POST /api/learners/{id}/adapt", h.adapt)
+	mux.HandleFunc("POST /api/learners/{id}/feedback", light(h.feedback))
+	mux.HandleFunc("POST /api/learners/{id}/adapt", agent(h.adapt))
 	mux.HandleFunc("GET /api/plans/{id}/feedback", h.planFeedback)
-	mux.HandleFunc("POST /api/plans/{id}/days/{day}/exercise", h.exercise)
-	mux.HandleFunc("POST /api/exercises/{id}/attempts", h.attempt)
-	return mux
+	mux.HandleFunc("POST /api/plans/{id}/days/{day}/exercise", agent(h.exercise))
+	mux.HandleFunc("POST /api/exercises/{id}/attempts", agent(h.attempt))
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) { fail(w, domain.ErrNotFound) })
+	if h.StaticDir != "" {
+		mux.Handle("/", spa(h.StaticDir))
+	}
+	return secure(mux)
 }
 
 func (h *Handler) health(w http.ResponseWriter, _ *http.Request) {
