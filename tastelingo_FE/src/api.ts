@@ -80,6 +80,9 @@ export class ApiError extends Error {
   }
 }
 
+// Same-origin API under the app's base path, so the app also works from a subpath such as /tastelingo/.
+const apiPrefix = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`
+
 async function request<T>(path: string, init?: RequestInit, timeoutMs = 20_000): Promise<T> {
   const controller = new AbortController()
   const abort = () => controller.abort()
@@ -88,7 +91,6 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 20_000):
   let timedOut = false
   const timer = setTimeout(() => { timedOut = true; controller.abort() }, timeoutMs)
   try {
-    const apiPrefix = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + "/api"
     const res = await fetch(`${apiPrefix}${path}`, { ...init, signal: controller.signal, headers: { 'Content-Type': 'application/json', ...init?.headers } })
     const body = await res.json().catch((err: unknown) => {
       if (controller.signal.aborted) throw err

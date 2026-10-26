@@ -5,6 +5,9 @@ WORKDIR /web
 COPY tastelingo_FE/package.json tastelingo_FE/pnpm-lock.yaml tastelingo_FE/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY tastelingo_FE/ ./
+# Set to a subpath such as /tastelingo/ when a reverse proxy serves the app there.
+ARG TASTELINGO_BASE=/
+ENV TASTELINGO_BASE=$TASTELINGO_BASE
 RUN pnpm build
 
 FROM golang:1.26-alpine AS api

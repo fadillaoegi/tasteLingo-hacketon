@@ -2,23 +2,16 @@ import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-function redirectPlugin(): PluginOption {
+// redirectToBase sends dev-server visits to / or the base without its trailing slash to the base path.
+function redirectToBase(base: string): PluginOption {
   return {
-    name: 'redirect-tastelingo',
+    name: 'redirect-to-base',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (req.url === '/tastelingo') {
-          res.writeHead(301, { Location: '/tastelingo/' })
-          res.end()
-          return
-        }
-        if (req.url === '/') {
-          res.writeHead(302, { Location: '/tastelingo/' })
-          res.end()
-          return
-        }
-        if (req.url?.startsWith('/brand/')) {
-          res.writeHead(301, { Location: `/tastelingo${req.url}` })
+        // The project has no Node typings, so read url without them.
+        const { url } = req as { url?: string }
+        if (base !== '/' && (url === '/' || url === base.slice(0, -1))) {
+          res.writeHead(302, { Location: base })
           res.end()
           return
         }
@@ -29,24 +22,24 @@ function redirectPlugin(): PluginOption {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', 'TASTELINGO_API_PROXY')
-  const apiProxyTarget = env.TASTELINGO_API_PROXY || 'http://127.0.0.1:8104'
-  const base = process.env.VITE_BASE_PATH || '/tastelingo/'
-
+  const env = loadEnv(mode, '.', 'TASTELINGO_')
+  // TASTELINGO_BASE serves the app from a subpath, for example /tastelingo/.
+  const base = `/${(env.TASTELINGO_BASE || '/').replace(/^\/+|\/+$/g, '')}/`.replace('//', '/')
+  const api = `${base}api`
   return {
     base,
-    plugins: [react(), tailwindcss(), redirectPlugin()],
+    plugins: [react(), tailwindcss(), redirectToBase(base)],
     server: {
       host: '0.0.0.0',
       port: 8105,
       strictPort: true,
+      // The dev server is reached through a reverse proxy/tunnel on this host.
       allowedHosts: true,
       proxy: {
-        '/tastelingo/api': {
-          target: apiProxyTarget,
-          rewrite: (path) => path.replace(/^\/tastelingo/, ''),
+        [api]: {
+          target: env.TASTELINGO_API_PROXY || 'http://127.0.0.1:8104',
+          rewrite: (path) => '/api' + path.slice(api.length),
         },
-        '/api': apiProxyTarget,
       },
     },
     preview: { host: '0.0.0.0', port: 8105 },

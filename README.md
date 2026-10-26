@@ -127,6 +127,12 @@ docker build -t tastelingo .
 docker run -p 8080:8080 --env-file .env -e API_ADDR= tastelingo
 ```
 
+To serve the app from a subpath (the public demo runs at `/tastelingo/`), build with
+`--build-arg TASTELINGO_BASE=/tastelingo/` and let the reverse proxy strip that prefix before
+forwarding to the container. For local development the same variable can go in
+`tastelingo_FE/.env.local`. Always serve the built frontend (`pnpm build`) in production, not the
+Vite dev server.
+
 `render.yaml` is a [Render](https://render.com) Blueprint for the same image. Use a managed
 PostgreSQL such as [Neon](https://neon.tech) for `DATABASE_URL` (with `sslmode=require`), and enter
 `QLOO_API_KEY` and `GEMINI_API_KEY` as secrets in the hosting dashboard.
