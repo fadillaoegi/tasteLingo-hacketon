@@ -4,8 +4,9 @@ An AI agent that builds an English-learning plan from the films, TV shows, books
 music you already love, using the [Qloo](https://www.qloo.com/) taste graph. Built for the
 Qloo Agentic Hackathon (2026).
 
-> **Status:** early development. Live Qloo and Gemini are enabled and verified in the local
-> configuration. The example configuration defaults to mock mode until you supply your own keys.
+**Live demo:** https://fldev.co.id/tastelingo/ (no login; click **Try the demo**).
+
+> **Status:** hackathon release. The live demo uses real Qloo and Gemini responses. The example configuration defaults to mock mode until you supply your own keys.
 > Mock data is synthetic, every mock title ends in “(mock)”, and the UI shows a development-mode
 > banner when a mock provider is active.
 
