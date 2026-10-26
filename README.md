@@ -71,14 +71,14 @@ Requirements: Go 1.26, Node 24 + pnpm, Docker.
 
 ```bash
 cp .env.example .env            # keep real keys only here; .env is gitignored
-docker compose up -d postgres   # PostgreSQL on 127.0.0.1:55442
-cd tastelingo_BE && go run ./cmd/server          # API on 127.0.0.1:8110
-cd tastelingo_FE && pnpm install && pnpm dev     # UI on http://127.0.0.1:5190
+docker compose up -d postgres   # PostgreSQL on 127.0.0.1:8100
+cd tastelingo_BE && go run ./cmd/server          # API on 127.0.0.1:8104
+cd tastelingo_FE && pnpm install && pnpm dev     # UI on http://127.0.0.1:8105
 ```
 
 Modes (in `.env`): `QLOO_MODE=mock|live`, `LLM_MODE=mock|gemini`, `STORE_MODE=postgres|memory`.
 
-The frontend uses the API at `http://127.0.0.1:8110` by default. To use a different local API,
+The frontend uses the API at `http://127.0.0.1:8104` by default. To use a different local API,
 set `TASTELINGO_API_PROXY=http://127.0.0.1:8111` in `tastelingo_FE/.env.local` (gitignored).
 Vite reloads this setting automatically.
 

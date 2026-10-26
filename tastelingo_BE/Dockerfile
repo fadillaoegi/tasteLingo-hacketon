@@ -12,6 +12,6 @@ RUN apk add --no-cache ca-certificates tzdata && addgroup -S tastelingo && addus
 WORKDIR /app
 COPY --from=build /out/tastelingo ./server
 USER tastelingo
-EXPOSE 8110
+EXPOSE 8104
 ENTRYPOINT ["/app/server"]
 CMD ["-env", "/dev/null"]

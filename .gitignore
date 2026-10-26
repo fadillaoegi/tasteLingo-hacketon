@@ -17,3 +17,6 @@ tmp/
 docs/PROGRESS.md
 docs/DEVPOST.md
 *.tsbuildinfo
+
+# Server-specific compose settings
+compose.override.yaml

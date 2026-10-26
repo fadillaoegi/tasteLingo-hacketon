@@ -106,7 +106,7 @@ export function TasteJourney({ favorites, level, daily, onDemo, busy }: Props) {
           </div>
           <div className="scene-core" aria-hidden="true">
             <div className="core-halo" />
-            <img src="/brand/tastelingo-mark-3d.webp" alt="" width="512" height="512" />
+            <img src={`${import.meta.env.BASE_URL}brand/tastelingo-mark-3d.webp`} alt="" width="512" height="512" />
             <span className="core-plinth" />
           </div>
           <div className="scene-plan">

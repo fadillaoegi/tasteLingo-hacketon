@@ -182,7 +182,7 @@ export function Onboarding({ busy, onSubmit, onDemo }: Props) {
       </div>
       <aside className="profile-preview" aria-label="Your plan preferences">
         <span className="preview-label">A PLAN THAT STARTS WITH YOU</span>
-        <div className="profile-orb" aria-hidden="true"><img src="/brand/tastelingo-mark-3d.webp" alt="" width="128" height="128" /></div>
+        <div className="profile-orb" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}brand/tastelingo-mark-3d.webp`} alt="" width="128" height="128" /></div>
         <h3>A little more you.<br />A little more English.</h3>
         <p>Your choices shape the content and activities in your plan.</p>
         <dl>

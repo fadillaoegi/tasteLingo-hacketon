@@ -127,7 +127,7 @@ func run() error {
 		return fmt.Errorf("invalid LLM_MODE")
 	}
 
-	addr := env("API_ADDR", "127.0.0.1:8110")
+	addr := env("API_ADDR", "127.0.0.1:8104")
 	// Hosting platforms such as Render provide the port to listen on.
 	if port := os.Getenv("PORT"); port != "" && os.Getenv("API_ADDR") == "" {
 		addr = "0.0.0.0:" + port

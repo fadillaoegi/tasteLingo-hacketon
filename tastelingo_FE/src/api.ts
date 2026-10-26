@@ -88,7 +88,8 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 20_000):
   let timedOut = false
   const timer = setTimeout(() => { timedOut = true; controller.abort() }, timeoutMs)
   try {
-    const res = await fetch(`/api${path}`, { ...init, signal: controller.signal, headers: { 'Content-Type': 'application/json', ...init?.headers } })
+    const apiPrefix = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + "/api"
+    const res = await fetch(`${apiPrefix}${path}`, { ...init, signal: controller.signal, headers: { 'Content-Type': 'application/json', ...init?.headers } })
     const body = await res.json().catch((err: unknown) => {
       if (controller.signal.aborted) throw err
       return null

@@ -11,13 +11,13 @@ const assert = require('node:assert/strict');
   const browser = await puppeteer.launch({ headless: true, executablePath, userDataDir: path.join(output, 'browser-profile'), args: ['--disable-crash-reporter', '--no-first-run'] });
   try {
     const page = await browser.newPage();
-    await page.goto('http://127.0.0.1:5190/');
+    await page.goto('http://127.0.0.1:8105/');
     await page.evaluate(() => localStorage.clear());
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     for (const [name, width, height] of [['desktop', 1440, 1060], ['mobile', 390, 844], ['small-mobile', 320, 740]]) {
       await page.setViewport({ width, height, deviceScaleFactor: 1 });
-      await page.goto('http://127.0.0.1:5190/', { waitUntil: 'networkidle0' });
+      await page.goto('http://127.0.0.1:8105/', { waitUntil: 'networkidle0' });
       await page.waitForSelector('.taste-scene');
       await page.waitForFunction(() => [...document.querySelectorAll('.taste-scene img')].every(img => img.complete && img.naturalWidth));
       await new Promise(resolve => setTimeout(resolve, 600));
