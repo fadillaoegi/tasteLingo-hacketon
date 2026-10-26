@@ -127,10 +127,12 @@ docker build -t tastelingo .
 docker run -p 8080:8080 --env-file .env -e API_ADDR= tastelingo
 ```
 
-To serve the app from a subpath (the public demo runs at `/tastelingo/`), build with
-`--build-arg TASTELINGO_BASE=/tastelingo/` and let the reverse proxy strip that prefix before
-forwarding to the container. For local development the same variable can go in
-`tastelingo_FE/.env.local`. Always serve the built frontend (`pnpm build`) in production, not the
+To serve the app from a subpath (the public demo runs at `/tastelingo/`), set
+`TASTELINGO_BASE=/tastelingo/` in `.env` and run `docker compose up -d --build api`. Compose builds
+the frontend for that base and sets `BASE_PATH` so the API serves the same prefix, so the reverse
+proxy can forward `/tastelingo/` unchanged. With plain `docker`, pass
+`--build-arg TASTELINGO_BASE=/tastelingo/` and `-e BASE_PATH=/tastelingo`. For local development
+the same variable can go in `tastelingo_FE/.env.local`. Always serve the built frontend (`pnpm build`) in production, not the
 Vite dev server.
 
 `render.yaml` is a [Render](https://render.com) Blueprint for the same image. Use a managed

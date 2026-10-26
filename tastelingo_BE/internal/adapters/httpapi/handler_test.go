@@ -52,3 +52,14 @@ func TestOnboardingToPlanOverHTTP(t *testing.T) {
 		t.Fatalf("run trace: %d", rec.Code)
 	}
 }
+
+func TestMountServesUnderBasePath(t *testing.T) {
+	h := Mount("/tastelingo/", (&Handler{Svc: &application.Service{Repo: memory.New(), Taste: qloo.Mock{}, LLM: llm.Mock{}, Now: time.Now}}).Routes())
+	for path, want := range map[string]int{"/tastelingo/api/health": 200, "/tastelingo": http.StatusFound, "/api/health": 404} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		if rec.Code != want {
+			t.Errorf("%s: got %d, want %d", path, rec.Code, want)
+		}
+	}
+}

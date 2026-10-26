@@ -16,8 +16,13 @@ services:
       timeout: 3s
       retries: 20
   api:
-    build: ./tastelingo_BE
+    # The production image: Go API plus the built frontend from one origin.
+    build:
+      context: .
+      args:
+        TASTELINGO_BASE: ${TASTELINGO_BASE:-/}
     environment:
+      BASE_PATH: ${TASTELINGO_BASE:-}
       DATABASE_URL: postgres://${POSTGRES_USER:-tastelingo}:${POSTGRES_PASSWORD:-tastelingo_local}@postgres:5432/${POSTGRES_DB:-tastelingo}?sslmode=disable
       API_ADDR: 0.0.0.0:8104
       QLOO_MODE: ${QLOO_MODE:-mock}

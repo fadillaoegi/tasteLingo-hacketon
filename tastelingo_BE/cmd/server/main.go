@@ -137,7 +137,7 @@ func run() error {
 	if handler.Agent, handler.Light, e = limiters(); e != nil {
 		return e
 	}
-	srv := &http.Server{Addr: addr, Handler: handler.Routes(), ReadHeaderTimeout: 5 * time.Second}
+	srv := &http.Server{Addr: addr, Handler: httpapi.Mount(os.Getenv("BASE_PATH"), handler.Routes()), ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		<-ctx.Done()
 		shutdown, done := context.WithTimeout(context.Background(), 10*time.Second)
