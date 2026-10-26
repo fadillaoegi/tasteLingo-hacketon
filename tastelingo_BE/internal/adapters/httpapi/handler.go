@@ -95,7 +95,7 @@ func (h *Handler) agentPlan(w http.ResponseWriter, r *http.Request, use func(con
 	}
 	if err != nil {
 		slog.Warn("planning run failed", "run", run.ID, "error", err)
-		write(w, http.StatusBadGateway, map[string]any{"error": "the agent could not finish", "run": run})
+		write(w, agentFailed, map[string]any{"error": "the agent could not finish", "run": run})
 		return
 	}
 	write(w, http.StatusOK, map[string]any{"plan": plan, "run": run})
@@ -148,6 +148,10 @@ func write(w http.ResponseWriter, status int, body any) {
 }
 
 const agentTimeout = 120 * time.Second
+
+// agentFailed reports a run that ended without a valid result. It is not 502, because
+// proxies such as Cloudflare replace 502 bodies and the client would lose the trace.
+const agentFailed = http.StatusInternalServerError
 
 func (h *Handler) latestComparison(w http.ResponseWriter, r *http.Request) {
 	plan, err := h.Svc.LatestComparison(r.Context(), r.PathValue("id"))
@@ -212,7 +216,7 @@ func (h *Handler) exercise(w http.ResponseWriter, r *http.Request) {
 	ex, run, err := h.Svc.Exercise(ctx, r.PathValue("id"), day)
 	if err != nil && run != nil && run.ID != "" {
 		slog.Warn("exercise run failed", "run", run.ID, "error", err)
-		write(w, http.StatusBadGateway, map[string]any{"error": "the agent could not finish", "run": run})
+		write(w, agentFailed, map[string]any{"error": "the agent could not finish", "run": run})
 		return
 	}
 	if err != nil {

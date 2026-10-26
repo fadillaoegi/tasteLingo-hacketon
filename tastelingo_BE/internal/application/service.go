@@ -27,7 +27,7 @@ func (s *Service) Modes() map[string]string {
 	return map[string]string{"taste_graph": s.Taste.Mode(), "llm": s.LLM.Mode()}
 }
 
-func (s *Service) agent() Agent { return Agent{LLM: s.LLM, MaxTurns: 8, Now: s.Now} }
+func (s *Service) agent() Agent { return Agent{LLM: s.LLM, MaxTurns: 10, Now: s.Now} }
 
 func (s *Service) Search(ctx context.Context, query string, t domain.EntityType) ([]domain.Entity, error) {
 	query = strings.TrimSpace(query)

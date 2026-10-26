@@ -96,7 +96,8 @@ that match the learner's real taste, at a difficulty that fits their CEFR level.
 Rules:
 - Use get_taste_insights (and get_tags or search_entities if useful) to discover content.
   The learner's favorites are signals; do not schedule the favorites themselves.
-- Only schedule entities returned by those tools in this conversation, using their exact id.
+- Only schedule entities returned by those tools in this conversation, using their exact id
+  and name.
   Never invent titles. Prefer English-language works or works with a well-known English version.
 - Mix at least two content types. Each day's minutes must not exceed the learner's daily_minutes.
 - "activity" is a concrete task (for example: watch one episode with English subtitles,
@@ -198,6 +199,7 @@ func (p *planner) tools() []Tool {
 		"days": map[string]any{"type": "array", "items": obj(map[string]any{
 			"day":       map[string]any{"type": "integer"},
 			"entity_id": map[string]any{"type": "string"},
+			"name":      map[string]any{"type": "string", "description": "the entity name exactly as returned by the tool"},
 			"activity":  map[string]any{"type": "string"},
 			"focus":     map[string]any{"type": "string", "enum": []string{"vocabulary", "listening", "reading", "speaking", "writing"}},
 			"minutes":   map[string]any{"type": "integer"},
@@ -299,6 +301,7 @@ func (p *planner) savePlan(_ context.Context, raw json.RawMessage) (any, error) 
 		Days    []struct {
 			Day      int    `json:"day"`
 			EntityID string `json:"entity_id"`
+			Name     string `json:"name"`
 			Activity string `json:"activity"`
 			Focus    string `json:"focus"`
 			Minutes  int    `json:"minutes"`
@@ -330,11 +333,14 @@ func (p *planner) savePlan(_ context.Context, raw json.RawMessage) (any, error) 
 		if disliked[d.EntityID] {
 			return nil, fmt.Errorf("day %d: the learner disliked this item", d.Day)
 		}
-		e, ok := p.seen[d.EntityID]
+		e, ok := p.resolve(d.EntityID, d.Name)
 		if !ok {
-			return nil, fmt.Errorf("day %d: entity_id %q was not returned by any tool in this run", d.Day, d.EntityID)
+			return nil, fmt.Errorf("day %d: entity_id %q was not returned by any tool in this run; copy the id exactly from a tool result", d.Day, d.EntityID)
 		}
-		if favorites[d.EntityID] {
+		if disliked[e.ID] {
+			return nil, fmt.Errorf("day %d: the learner disliked this item", d.Day)
+		}
+		if favorites[e.ID] {
 			return nil, fmt.Errorf("day %d: do not schedule the learner's own favorite", d.Day)
 		}
 		if d.Minutes < 5 || d.Minutes > p.learner.DailyMinutes {
@@ -352,4 +358,26 @@ func (p *planner) savePlan(_ context.Context, raw json.RawMessage) (any, error) 
 	p.plan.Themes, p.plan.Summary, p.plan.Days, p.plan.Changes = in.Themes, in.Summary, days, in.Changes
 	p.built = true
 	return map[string]any{"saved": true, "plan_id": p.plan.ID}, nil
+}
+
+// resolve finds an entity returned earlier in this run. Models sometimes miscopy long
+// ids, so an id that differs only in case, or a name that uniquely matches a returned
+// entity, resolves to that entity. Anything else stays rejected, so plans remain grounded.
+func (p *planner) resolve(id, name string) (domain.Entity, bool) {
+	if e, ok := p.seen[id]; ok {
+		return e, true
+	}
+	var found []domain.Entity
+	for key, e := range p.seen {
+		if strings.EqualFold(key, strings.TrimSpace(id)) {
+			return e, true
+		}
+		if name = strings.TrimSpace(name); name != "" && strings.EqualFold(e.Name, name) {
+			found = append(found, e)
+		}
+	}
+	if len(found) == 1 {
+		return found[0], true
+	}
+	return domain.Entity{}, false
 }

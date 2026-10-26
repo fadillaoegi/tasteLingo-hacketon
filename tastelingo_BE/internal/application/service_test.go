@@ -171,3 +171,41 @@ func lastResult(run domain.AgentRun) string {
 	}
 	return ""
 }
+
+func TestBuildPlanResolvesMiscopiedIDsByReturnedName(t *testing.T) {
+	ctx := context.Background()
+	movies, _ := qloo.Mock{}.Insights(ctx, application.InsightsQuery{Type: domain.Movie, Take: 4})
+	podcasts, _ := qloo.Mock{}.Insights(ctx, application.InsightsQuery{Type: domain.Podcast, Take: 4})
+	list := append(movies[:4:4], podcasts[:3]...)
+	plan := func(id, name string) map[string]any {
+		days := make([]map[string]any, 7)
+		for i, e := range list {
+			days[i] = map[string]any{"day": i + 1, "entity_id": e.ID, "name": e.Name, "activity": "a", "focus": "reading", "minutes": 20, "why": "w"}
+		}
+		days[1]["entity_id"], days[1]["name"] = id, name
+		return map[string]any{"themes": []string{"t"}, "summary": "s", "days": days}
+	}
+	run := func(args map[string]any) (domain.Plan, domain.AgentRun, error) {
+		model := &scripted{turns: []application.Message{
+			{Role: application.RoleModel, Calls: []application.ToolCall{
+				{ID: "1", Name: "get_taste_insights", Args: json.RawMessage(`{"type":"movie","take":4}`)},
+				{ID: "2", Name: "get_taste_insights", Args: json.RawMessage(`{"type":"podcast","take":4}`)},
+			}},
+			call("build_plan", args),
+		}}
+		svc := newService(model)
+		return svc.BuildPlan(ctx, learner(t, svc).ID)
+	}
+	for _, c := range []struct{ name, id, entity string }{
+		{"miscopied id", list[1].ID + "x", list[1].Name},
+		{"different case", strings.ToLower(list[1].ID), ""},
+	} {
+		p, r, err := run(plan(c.id, c.entity))
+		if err != nil || p.Days[1].Entity.ID != list[1].ID {
+			t.Fatalf("%s: expected day 2 to resolve to %s, got %v (%s)", c.name, list[1].ID, err, lastResult(r))
+		}
+	}
+	if _, r, err := run(plan("invented-id", "A Title Nobody Returned")); !errors.Is(err, application.ErrAgentIncomplete) || !strings.Contains(lastResult(r), "was not returned") {
+		t.Fatalf("unknown entity must stay rejected, got %v", err)
+	}
+}

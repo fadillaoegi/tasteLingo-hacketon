@@ -87,7 +87,7 @@ describe('demo and saved-profile lifecycle', () => {
 
   it('releases loading after a failed plan and retries with the same saved profile', async () => {
     mocks.demo.mockResolvedValue(learner)
-    mocks.buildPlan.mockRejectedValueOnce(new ApiError('the agent could not finish', 502, { run: { ...run, status: 'failed' } }))
+    mocks.buildPlan.mockRejectedValueOnce(new ApiError('the agent could not finish', 500, { run: { ...run, status: 'failed' } }))
     mocks.buildPlan.mockResolvedValueOnce({ plan, run })
     await mount()
     await click('Try the demo')

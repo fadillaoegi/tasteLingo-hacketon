@@ -8,6 +8,7 @@ import (
 	"tastelingo/internal/application"
 	"tastelingo/internal/domain"
 	"testing"
+	"time"
 )
 
 // All payloads below are synthetic and shaped after the developer guide; no Qloo responses are stored.
@@ -60,11 +61,27 @@ func TestErrorsAndRedirectsDoNotLeak(t *testing.T) {
 		w.WriteHeader(http.StatusTooManyRequests)
 	}))
 	defer srv.Close()
-	c := &Client{BaseURL: srv.URL, Key: "secret", HTTP: srv.Client()}
+	c := &Client{BaseURL: srv.URL, Key: "secret", HTTP: srv.Client(), Backoff: time.Millisecond}
 	if _, err := c.Tags(context.Background(), "x", 3); !errors.Is(err, ErrUnavailable) || leaked {
 		t.Fatalf("redirect must fail without forwarding key: %v leaked=%v", err, leaked)
 	}
 	if _, err := c.Search(context.Background(), "x", domain.Movie, 3); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("expected ErrUnavailable, got %v", err)
+	}
+}
+
+func TestRateLimitedRequestIsRetried(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls++; calls < 3 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		_, _ = w.Write([]byte(`{"results":{"tags":[{"id":"urn:tag:genre:media:fantasy","name":"Fantasy"}]}}`))
+	}))
+	defer srv.Close()
+	c := &Client{BaseURL: srv.URL, Key: "k", HTTP: srv.Client(), Backoff: time.Millisecond}
+	if _, err := c.Tags(context.Background(), "fantasy", 3); err != nil || calls != 3 {
+		t.Fatalf("expected success on the third attempt, got %v after %d calls", err, calls)
 	}
 }

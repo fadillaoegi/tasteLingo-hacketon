@@ -95,8 +95,8 @@ export default function App() {
   }
 
   function failed(err: unknown) {
-    if (err instanceof ApiError && err.body && typeof err.body === 'object' && 'run' in err.body) setRun((err.body as { run: AgentRun }).run)
-    setError(err instanceof ApiError && err.status === 502
+    if (err instanceof ApiError && hasRun(err.body)) setRun(err.body.run)
+    setError(err instanceof ApiError && (err.status === 502 || hasRun(err.body))
       ? 'We could not finish your plan. Your profile is saved — please try again.'
       : err instanceof Error ? err.message : 'Could not build your plan. Please try again.')
   }
@@ -254,4 +254,9 @@ export default function App() {
       <footer className="site-footer"><span>TasteLingo<span className="text-teal-700">.</span></span><p>A little culture. A little practice. A path that feels like you.</p><a href="#root">Back to top ↑</a></footer>
     </div>
   )
+}
+
+// hasRun reports whether a failed agent request returned its trace.
+function hasRun(body: unknown): body is { run: AgentRun } {
+  return !!body && typeof body === 'object' && 'run' in body
 }

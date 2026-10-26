@@ -12,6 +12,7 @@ import (
 	"strings"
 	"tastelingo/internal/application"
 	"tastelingo/internal/domain"
+	"time"
 )
 
 // Client calls the Qloo hackathon API. Response shapes follow the hackathon
@@ -20,6 +21,8 @@ type Client struct {
 	BaseURL string
 	Key     string
 	HTTP    *http.Client
+	// Backoff is the first wait after HTTP 429; zero uses 700ms. Retry-After is honoured up to 3s.
+	Backoff time.Duration
 }
 
 func (c *Client) Mode() string { return domain.SourceQloo }
@@ -151,10 +154,34 @@ func year(raw json.RawMessage) int {
 
 var ErrUnavailable = errors.New("taste graph unavailable")
 
+// get retries HTTP 429 twice, because concurrent demo users can briefly exceed Qloo's rate limit.
 func (c *Client) get(ctx context.Context, path string, q url.Values, out any) error {
+	wait := c.Backoff
+	if wait == 0 {
+		wait = 700 * time.Millisecond
+	}
+	for attempt := 0; ; attempt++ {
+		retryAfter, err := c.getOnce(ctx, path, q, out)
+		if retryAfter < 0 || attempt == 2 {
+			return err
+		}
+		delay := wait << attempt
+		if retryAfter > 0 {
+			delay = min(retryAfter, 3*time.Second)
+		}
+		select {
+		case <-ctx.Done():
+			return err
+		case <-time.After(delay):
+		}
+	}
+}
+
+// getOnce returns a negative retry delay unless the response was HTTP 429.
+func (c *Client) getOnce(ctx context.Context, path string, q url.Values, out any) (time.Duration, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(c.BaseURL, "/")+path+"?"+q.Encode(), nil)
 	if err != nil {
-		return err
+		return -1, err
 	}
 	req.Header.Set("X-Api-Key", c.Key)
 	req.Header.Set("Accept", "application/json")
@@ -163,18 +190,22 @@ func (c *Client) get(ctx context.Context, path string, q url.Values, out any) er
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	res, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("%w: %s request failed", ErrUnavailable, path)
+		return -1, fmt.Errorf("%w: %s request failed", ErrUnavailable, path)
 	}
 	defer res.Body.Close()
 	raw, err := io.ReadAll(io.LimitReader(res.Body, 4<<20))
 	if err != nil {
-		return fmt.Errorf("%w: %s response unreadable", ErrUnavailable, path)
+		return -1, fmt.Errorf("%w: %s response unreadable", ErrUnavailable, path)
+	}
+	if res.StatusCode == http.StatusTooManyRequests {
+		secs, _ := strconv.Atoi(res.Header.Get("Retry-After"))
+		return time.Duration(secs) * time.Second, fmt.Errorf("%w: %s returned HTTP %d", ErrUnavailable, path, res.StatusCode)
 	}
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("%w: %s returned HTTP %d", ErrUnavailable, path, res.StatusCode)
+		return -1, fmt.Errorf("%w: %s returned HTTP %d", ErrUnavailable, path, res.StatusCode)
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
-		return fmt.Errorf("%w: %s returned unexpected JSON", ErrUnavailable, path)
+		return -1, fmt.Errorf("%w: %s returned unexpected JSON", ErrUnavailable, path)
 	}
-	return nil
+	return -1, nil
 }
