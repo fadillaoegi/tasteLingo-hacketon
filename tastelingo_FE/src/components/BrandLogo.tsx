@@ -3,7 +3,7 @@ export function BrandLogo() {
     <span className="brand-lockup">
       <span className="brand-mark" aria-hidden="true">
         <img
-          src="/brand/tastelingo-mark-3d.webp"
+          src={`${import.meta.env.BASE_URL}brand/tastelingo-mark-3d.webp`}
           alt=""
           width="128"
           height="128"
